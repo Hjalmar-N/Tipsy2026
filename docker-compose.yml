@@ -1,0 +1,43 @@
+version: "3.9"
+
+services:
+  api:
+    image: python:3.11-slim
+    working_dir: /workspace/apps/api
+    environment:
+      HARDWARE_MODE: mock
+      DATABASE_URL: sqlite:////workspace/apps/api/tipsy.db
+    volumes:
+      - ./:/workspace
+    command: >
+      bash -lc "pip install -e .[dev] &&
+      python -m app.seed &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    ports:
+      - "8000:8000"
+
+  admin-ui:
+    image: node:20
+    working_dir: /workspace/apps/admin-ui
+    volumes:
+      - ./:/workspace
+    command: >
+      sh -lc "npm install &&
+      npm run dev -- --host 0.0.0.0 --port 5173"
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+
+  touchscreen-ui:
+    image: node:20
+    working_dir: /workspace/apps/touchscreen-ui
+    volumes:
+      - ./:/workspace
+    command: >
+      sh -lc "npm install &&
+      npm run dev -- --host 0.0.0.0 --port 5174"
+    ports:
+      - "5174:5174"
+    depends_on:
+      - api

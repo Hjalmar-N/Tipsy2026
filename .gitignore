@@ -1,0 +1,51 @@
+### Python / FastAPI backend
+apps/api/.venv/
+apps/api/__pycache__/
+apps/api/**/__pycache__/
+apps/api/.pytest_cache/
+apps/api/.mypy_cache/
+apps/api/.coverage
+apps/api/htmlcov/
+
+# Local SQLite databases
+*.db
+*.sqlite
+*.sqlite3
+
+### Node / React frontends
+apps/touchscreen-ui/node_modules/
+apps/touchscreen-ui/dist/
+apps/touchscreen-ui/build/
+apps/touchscreen-ui/.npm-cache/
+
+apps/admin-ui/node_modules/
+apps/admin-ui/dist/
+apps/admin-ui/build/
+apps/admin-ui/.npm-cache/
+
+### Environment / secrets
+.env
+.env.local
+.env.*.local
+apps/api/.env
+apps/touchscreen-ui/.env
+apps/admin-ui/.env
+
+### OS / editor noise
+.DS_Store
+Thumbs.db
+*.log
+*.swp
+*.swo
+.vscode/
+.idea/
+
+### Tooling / cache
+.pytest_cache/
+__pycache__/
+.mypy_cache/
+.cache/
+
+### Cursor / IDE project files
+.cursor/
+

@@ -25,6 +25,7 @@ export function CarouselScreen({
   const [index, setIndex] = useState(0);
   const [pointerStartX, setPointerStartX] = useState<number | null>(null);
   const [imageErrored, setImageErrored] = useState(false);
+  const [diagMsg, setDiagMsg] = useState<string | null>(null);
 
   const count = recipes.length;
   const currentIndex = count === 0 ? 0 : ((index % count) + count) % count;
@@ -136,79 +137,82 @@ export function CarouselScreen({
 
   const imageUrl = getDrinkImageUrl(recipe.name);
 
+  function diagTap(size: OrderSize) {
+    const ts = new Date().toLocaleTimeString();
+    const msg = `${size} tap @ ${ts} | ready=${readiness.ready}`;
+    console.log(`[DIAG] ${msg}`);
+    setDiagMsg(msg);
+    if (readiness.ready && recipe) {
+      console.log(`[DIAG] calling onSelectSize(${recipe.id}, ${size})`);
+      onSelectSize(recipe, size);
+    }
+  }
+
   return (
-      <RoundFrame>
+    <RoundFrame>
       <div className="flex flex-1 flex-col">
-        <div className="flex flex-1 flex-row items-center justify-center gap-1">
-          {/* Single: left, white outline martini + label */}
-          <button
-            type="button"
-            onPointerDown={handleSizeTap("single")}
-            className={`flex min-h-[100px] min-w-[80px] flex-1 max-w-[110px] touch-manipulation flex-col items-center justify-center gap-1.5 text-white/95 transition active:opacity-90 ${
-              readiness.ready ? "" : "opacity-40"
-            }`}
-            aria-label="Single"
-          >
-            <SingleMartiniIcon className="h-11 w-11 shrink-0" />
-            <span className="text-xs font-medium uppercase tracking-widest">single</span>
-          </button>
-
-          {/* Central drink: main gesture surface for horizontal swipes */}
-          <div
-            className="relative flex flex-1 flex-col items-center justify-center"
-            style={{ minWidth: 0 }}
-            onPointerDown={handlePointerDown}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerCancel}
-            onPointerLeave={handlePointerCancel}
-          >
-            {imageUrl && !imageErrored ? (
-              <img
-                src={imageUrl}
-                alt=""
-                className="max-h-[420px] w-auto max-w-[360px] object-contain object-center drop-shadow-[0_12px_40px_rgba(0,0,0,0.65)]"
-                draggable={false}
-                onError={() => setImageErrored(true)}
-              />
-            ) : (
-              <div
-                className="flex h-[220px] w-[180px] items-center justify-center text-6xl font-semibold text-white/40"
-                aria-hidden
-              >
-                {recipe.name.slice(0, 1)}
-              </div>
-            )}
-          </div>
-
-          {/* Double: right, two martini glasses + label */}
-          <button
-            type="button"
-            onPointerDown={handleSizeTap("double")}
-            className={`flex min-h-[100px] min-w-[80px] flex-1 max-w-[110px] touch-manipulation flex-col items-center justify-center gap-1.5 text-white/95 transition active:opacity-90 ${
-              readiness.ready ? "" : "opacity-40"
-            }`}
-            aria-label="Double"
-          >
-            <DoubleMartiniIcon className="h-11 w-11 shrink-0" />
-            <span className="text-xs font-medium uppercase tracking-widest">Double</span>
-          </button>
+        {/* Swipe area with drink image — unchanged */}
+        <div
+          className="relative flex shrink-0 flex-col items-center justify-center"
+          style={{ minWidth: 0, height: 180 }}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
+          onPointerLeave={handlePointerCancel}
+        >
+          {imageUrl && !imageErrored ? (
+            <img
+              src={imageUrl}
+              alt=""
+              className="max-h-[160px] w-auto max-w-[160px] object-contain drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
+              draggable={false}
+              onError={() => setImageErrored(true)}
+            />
+          ) : (
+            <div className="flex h-[120px] w-[120px] items-center justify-center text-5xl font-semibold text-white/40" aria-hidden>
+              {recipe.name.slice(0, 1)}
+            </div>
+          )}
         </div>
 
-        {/* Drink name: one clean name per recipe */}
-        <h2 className="mt-3 shrink-0 text-center font-body text-lg font-medium tracking-tight text-white">
-          {recipe.name}
-        </h2>
+        <h2 className="shrink-0 text-center text-base font-medium text-white">{recipe.name}</h2>
+
+        {/* Diagnostic feedback */}
+        {diagMsg && (
+          <p className="mt-1 shrink-0 text-center text-xs text-lime-400">{diagMsg}</p>
+        )}
+
+        {/* DIAGNOSTIC: two large centered tap zones */}
+        <div className="mt-2 flex flex-1 flex-row items-stretch justify-center gap-3 px-2">
+          <div
+            role="button"
+            style={{ touchAction: "manipulation", WebkitUserSelect: "none", userSelect: "none" }}
+            className="flex flex-1 cursor-none items-center justify-center rounded-2xl border-4 border-green-400 bg-green-400/20 text-xl font-bold text-green-300 active:bg-green-400/50"
+            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); diagTap("single"); }}
+            onTouchStart={(e) => { e.stopPropagation(); }}
+          >
+            SINGLE
+          </div>
+          <div
+            role="button"
+            style={{ touchAction: "manipulation", WebkitUserSelect: "none", userSelect: "none" }}
+            className="flex flex-1 cursor-none items-center justify-center rounded-2xl border-4 border-amber-400 bg-amber-400/20 text-xl font-bold text-amber-300 active:bg-amber-400/50"
+            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); diagTap("double"); }}
+            onTouchStart={(e) => { e.stopPropagation(); }}
+          >
+            DOUBLE
+          </div>
+        </div>
 
         {count > 1 && (
-          <div className="mt-2.5 flex justify-center gap-1.5">
+          <div className="mt-2 flex shrink-0 justify-center gap-1.5">
             {Array.from({ length: count }, (_, i) => (
-              <button
+              <span
                 key={i}
-                type="button"
+                role="button"
                 onClick={() => setIndex(i)}
-                aria-label={`Drink ${i + 1} of ${count}`}
-                className={`h-1.5 w-1.5 touch-manipulation rounded-full transition ${
-                  i === currentIndex ? "bg-white/90 scale-125" : "bg-white/3"
+                className={`h-1.5 w-1.5 rounded-full transition ${
+                  i === currentIndex ? "bg-white/90 scale-125" : "bg-white/30"
                 }`}
               />
             ))}

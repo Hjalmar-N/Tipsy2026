@@ -124,7 +124,11 @@ export function CarouselScreen({
           <button
             type="button"
             disabled={!readiness.ready}
-            onClick={() => onSelectSize(recipe, "single")}
+            onPointerUp={(e) => {
+              e.preventDefault();
+              if (!readiness.ready) return;
+              onSelectSize(recipe, "single");
+            }}
             className="flex min-h-[100px] min-w-[80px] flex-1 max-w-[110px] touch-manipulation flex-col items-center justify-center gap-1.5 text-white/95 transition active:opacity-90 disabled:opacity-40"
             aria-label="Single"
           >
@@ -163,7 +167,11 @@ export function CarouselScreen({
           <button
             type="button"
             disabled={!readiness.ready}
-            onClick={() => onSelectSize(recipe, "double")}
+            onPointerUp={(e) => {
+              e.preventDefault();
+              if (!readiness.ready) return;
+              onSelectSize(recipe, "double");
+            }}
             className="flex min-h-[100px] min-w-[80px] flex-1 max-w-[110px] touch-manipulation flex-col items-center justify-center gap-1.5 text-white/95 transition active:opacity-90 disabled:opacity-40"
             aria-label="Double"
           >

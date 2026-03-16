@@ -25,7 +25,6 @@ export function CarouselScreen({
   const [index, setIndex] = useState(0);
   const [pointerStartX, setPointerStartX] = useState<number | null>(null);
   const [imageErrored, setImageErrored] = useState(false);
-  const [diagMsg, setDiagMsg] = useState<string | null>(null);
 
   const count = recipes.length;
   const currentIndex = count === 0 ? 0 : ((index % count) + count) % count;
@@ -66,26 +65,6 @@ export function CarouselScreen({
   const handlePointerCancel = useCallback(() => {
     setPointerStartX(null);
   }, []);
-
-  const handleSizeTap = useCallback(
-    (size: OrderSize) =>
-      (e: React.PointerEvent<HTMLButtonElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log(`[Tipsy Kiosk] ${size} tapped. readiness.ready=${readiness.ready}`);
-        if (!readiness.ready) {
-          console.log(`[Tipsy Kiosk] ${size} blocked: machine not ready.`);
-          return;
-        }
-        if (!recipe) {
-          console.log(`[Tipsy Kiosk] ${size} blocked: no recipe selected.`);
-          return;
-        }
-        console.log(`[Tipsy Kiosk] ${size} proceeding: calling onSelectSize for recipe id=${recipe.id}`);
-        onSelectSize(recipe, size);
-      },
-    [onSelectSize, readiness.ready, recipe],
-  );
 
   if (error) {
     return (
@@ -137,24 +116,20 @@ export function CarouselScreen({
 
   const imageUrl = getDrinkImageUrl(recipe.name);
 
-  function diagTap(size: OrderSize) {
-    const ts = new Date().toLocaleTimeString();
-    const msg = `${size} tap @ ${ts} | ready=${readiness.ready}`;
-    console.log(`[DIAG] ${msg}`);
-    setDiagMsg(msg);
-    if (readiness.ready && recipe) {
-      console.log(`[DIAG] calling onSelectSize(${recipe.id}, ${size})`);
-      onSelectSize(recipe, size);
-    }
+  function handleSizePointerDown(size: OrderSize, e: React.PointerEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!readiness.ready || !recipe) return;
+    onSelectSize(recipe, size);
   }
 
   return (
     <RoundFrame>
       <div className="flex flex-1 flex-col">
-        {/* Swipe area with drink image — unchanged */}
+        {/* Swipe surface: central drink image */}
         <div
-          className="relative flex shrink-0 flex-col items-center justify-center"
-          style={{ minWidth: 0, height: 180 }}
+          className="relative flex flex-1 flex-col items-center justify-center"
+          style={{ minWidth: 0 }}
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerCancel}
@@ -164,48 +139,24 @@ export function CarouselScreen({
             <img
               src={imageUrl}
               alt=""
-              className="max-h-[160px] w-auto max-w-[160px] object-contain drop-shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
+              className="max-h-[280px] w-auto max-w-[280px] object-contain object-center drop-shadow-[0_12px_40px_rgba(0,0,0,0.65)]"
               draggable={false}
               onError={() => setImageErrored(true)}
             />
           ) : (
-            <div className="flex h-[120px] w-[120px] items-center justify-center text-5xl font-semibold text-white/40" aria-hidden>
+            <div className="flex h-[180px] w-[180px] items-center justify-center text-6xl font-semibold text-white/40" aria-hidden>
               {recipe.name.slice(0, 1)}
             </div>
           )}
         </div>
 
-        <h2 className="shrink-0 text-center text-base font-medium text-white">{recipe.name}</h2>
-
-        {/* Diagnostic feedback */}
-        {diagMsg && (
-          <p className="mt-1 shrink-0 text-center text-xs text-lime-400">{diagMsg}</p>
-        )}
-
-        {/* DIAGNOSTIC: two large centered tap zones */}
-        <div className="mt-2 flex flex-1 flex-row items-stretch justify-center gap-3 px-2">
-          <div
-            role="button"
-            style={{ touchAction: "manipulation", WebkitUserSelect: "none", userSelect: "none" }}
-            className="flex flex-1 cursor-none items-center justify-center rounded-2xl border-4 border-green-400 bg-green-400/20 text-xl font-bold text-green-300 active:bg-green-400/50"
-            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); diagTap("single"); }}
-            onTouchStart={(e) => { e.stopPropagation(); }}
-          >
-            SINGLE
-          </div>
-          <div
-            role="button"
-            style={{ touchAction: "manipulation", WebkitUserSelect: "none", userSelect: "none" }}
-            className="flex flex-1 cursor-none items-center justify-center rounded-2xl border-4 border-amber-400 bg-amber-400/20 text-xl font-bold text-amber-300 active:bg-amber-400/50"
-            onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); diagTap("double"); }}
-            onTouchStart={(e) => { e.stopPropagation(); }}
-          >
-            DOUBLE
-          </div>
-        </div>
+        {/* Drink name */}
+        <h2 className="shrink-0 text-center font-body text-lg font-medium tracking-tight text-white">
+          {recipe.name}
+        </h2>
 
         {count > 1 && (
-          <div className="mt-2 flex shrink-0 justify-center gap-1.5">
+          <div className="mt-1.5 flex shrink-0 justify-center gap-1.5">
             {Array.from({ length: count }, (_, i) => (
               <span
                 key={i}
@@ -218,6 +169,34 @@ export function CarouselScreen({
             ))}
           </div>
         )}
+
+        {/* Size controls: centered below drink */}
+        <div className="mt-3 flex shrink-0 flex-row items-center justify-center gap-4 pb-1">
+          <div
+            role="button"
+            aria-label="Single"
+            style={{ touchAction: "manipulation" }}
+            className={`flex h-[72px] w-[130px] touch-manipulation flex-col items-center justify-center gap-1 rounded-2xl border border-white/20 bg-white/10 transition active:bg-white/25 ${
+              readiness.ready ? "" : "opacity-40"
+            }`}
+            onPointerDown={(e) => handleSizePointerDown("single", e)}
+          >
+            <SingleMartiniIcon className="h-8 w-8 shrink-0 text-white/90" />
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-white/80">Single</span>
+          </div>
+          <div
+            role="button"
+            aria-label="Double"
+            style={{ touchAction: "manipulation" }}
+            className={`flex h-[72px] w-[130px] touch-manipulation flex-col items-center justify-center gap-1 rounded-2xl border border-white/20 bg-white/10 transition active:bg-white/25 ${
+              readiness.ready ? "" : "opacity-40"
+            }`}
+            onPointerDown={(e) => handleSizePointerDown("double", e)}
+          >
+            <DoubleMartiniIcon className="h-8 w-8 shrink-0 text-white/90" />
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-white/80">Double</span>
+          </div>
+        </div>
       </div>
     </RoundFrame>
   );

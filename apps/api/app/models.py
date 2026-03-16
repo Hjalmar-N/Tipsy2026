@@ -51,7 +51,10 @@ class Pump(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    # Legacy single-pin configuration. New setups should prefer gpio_forward_pin/gpio_reverse_pin.
     gpio_pin: Mapped[int | None] = mapped_column(Integer)
+    gpio_forward_pin: Mapped[int | None] = mapped_column(Integer)
+    gpio_reverse_pin: Mapped[int | None] = mapped_column(Integer)
     ingredient_id: Mapped[int | None] = mapped_column(ForeignKey("ingredients.id"))
     enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     ml_per_second: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)

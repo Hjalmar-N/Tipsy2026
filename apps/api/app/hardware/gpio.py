@@ -20,7 +20,8 @@ class RaspberryPiHardwareController(HardwareController):
         self._lock = threading.RLock()
         self._stop_event = threading.Event()
         self._active_pumps: set[int] = set()
-        self._initialized_pins: dict[int, int] = {}
+        # Map pump_id -> (forward_pin, reverse_pin)
+        self._initialized_pins: dict[int, tuple[int, int]] = {}
         self._emergency_stop_engaged = False
 
         try:
@@ -46,10 +47,18 @@ class RaspberryPiHardwareController(HardwareController):
             }
 
     def run_pump(self, pump_id: int, duration_seconds: float) -> None:
-        pin = self._prepare_pins([pump_id])[pump_id]
-        logger.info("Starting pump %s on GPIO pin %s for %.2f seconds", pump_id, pin, duration_seconds)
+        pins = self._prepare_pins([pump_id])
+        forward_pin, reverse_pin = pins[pump_id]
+        logger.info(
+            "Starting pump %s (forward=%s, reverse=%s) for %.2f seconds",
+            pump_id,
+            forward_pin,
+            reverse_pin,
+            duration_seconds,
+        )
         try:
-            self._set_pumps_active([pump_id], True)
+            # Forward direction for normal pours.
+            self._set_pumps_direction([pump_id], forward=True, reverse=False)
             interrupted = self._wait_for_duration(duration_seconds)
             if interrupted:
                 raise RuntimeError("Pump run interrupted by stop_all")
@@ -57,13 +66,15 @@ class RaspberryPiHardwareController(HardwareController):
             logger.exception("Pump %s failed during run", pump_id)
             raise
         finally:
-            self._set_pumps_active([pump_id], False)
+            self._set_pumps_direction([pump_id], forward=False, reverse=False)
             logger.info("Pump %s stopped", pump_id)
 
     def prime_pumps(self, pump_ids: list[int], duration_seconds: float) -> None:
+        # Prime in forward direction.
         self._run_batch(pump_ids, duration_seconds, action_name="prime")
 
     def clean_pumps(self, pump_ids: list[int], duration_seconds: float) -> None:
+        # Clean in reverse direction.
         self._run_batch(pump_ids, duration_seconds, action_name="clean")
 
     def stop_all(self) -> None:
@@ -97,7 +108,11 @@ class RaspberryPiHardwareController(HardwareController):
             duration_seconds,
         )
         try:
-            self._set_pumps_active(pump_ids, True)
+            # Forward for prime, reverse for clean.
+            if action_name == "clean":
+                self._set_pumps_direction(pump_ids, forward=False, reverse=True)
+            else:
+                self._set_pumps_direction(pump_ids, forward=True, reverse=False)
             interrupted = self._wait_for_duration(duration_seconds)
             if interrupted:
                 raise RuntimeError(f"{action_name.capitalize()} interrupted by stop_all")
@@ -105,30 +120,47 @@ class RaspberryPiHardwareController(HardwareController):
             logger.exception("%s failed for pumps %s", action_name.capitalize(), pump_ids)
             raise
         finally:
-            self._set_pumps_active(pump_ids, False)
+            self._set_pumps_direction(pump_ids, forward=False, reverse=False)
             logger.info("%s finished for pumps %s", action_name.capitalize(), pump_ids)
 
-    def _prepare_pins(self, pump_ids: list[int]) -> dict[int, int]:
+    def _prepare_pins(self, pump_ids: list[int]) -> dict[int, tuple[int, int]]:
         with self._lock:
             self._stop_event.clear()
             self._emergency_stop_engaged = False
-            resolved: dict[int, int] = {}
+            resolved: dict[int, tuple[int, int]] = {}
             for pump_id in pump_ids:
-                pin = self._initialized_pins.get(pump_id)
-                if pin is None:
-                    pin = self._resolver.resolve_pin(pump_id)
-                    self._adapter.setup_output(pin, active_low=self.settings.gpio_active_low)
-                    self._initialized_pins[pump_id] = pin
-                    logger.info("Configured pump %s on GPIO pin %s", pump_id, pin)
-                resolved[pump_id] = pin
+                pins = self._initialized_pins.get(pump_id)
+                if pins is None:
+                    forward_pin, reverse_pin = self._resolver.resolve_pins(pump_id)
+                    self._adapter.setup_output(forward_pin, active_low=self.settings.gpio_active_low)
+                    self._adapter.setup_output(reverse_pin, active_low=self.settings.gpio_active_low)
+                    self._initialized_pins[pump_id] = (forward_pin, reverse_pin)
+                    logger.info(
+                        "Configured pump %s with forward pin %s and reverse pin %s",
+                        pump_id,
+                        forward_pin,
+                        reverse_pin,
+                    )
+                resolved[pump_id] = self._initialized_pins[pump_id]
             return resolved
 
-    def _set_pumps_active(self, pump_ids: list[int], active: bool) -> None:
+    def _set_pumps_direction(self, pump_ids: list[int], *, forward: bool, reverse: bool) -> None:
         with self._lock:
             for pump_id in pump_ids:
-                pin = self._initialized_pins[pump_id]
-                self._adapter.write_output(pin, active=active, active_low=self.settings.gpio_active_low)
-                if active:
+                forward_pin, reverse_pin = self._initialized_pins[pump_id]
+                # Forward pin
+                self._adapter.write_output(
+                    forward_pin,
+                    active=forward,
+                    active_low=self.settings.gpio_active_low,
+                )
+                # Reverse pin
+                self._adapter.write_output(
+                    reverse_pin,
+                    active=reverse,
+                    active_low=self.settings.gpio_active_low,
+                )
+                if forward or reverse:
                     self._active_pumps.add(pump_id)
                 else:
                     self._active_pumps.discard(pump_id)
@@ -141,8 +173,13 @@ class RaspberryPiHardwareController(HardwareController):
         return self._stop_event.is_set()
 
     def _deactivate_all_known_pins(self) -> None:
-        for pin in self._initialized_pins.values():
+        for forward_pin, reverse_pin in self._initialized_pins.values():
             try:
-                self._adapter.write_output(pin, active=False, active_low=self.settings.gpio_active_low)
+                self._adapter.write_output(forward_pin, active=False, active_low=self.settings.gpio_active_low)
+                self._adapter.write_output(reverse_pin, active=False, active_low=self.settings.gpio_active_low)
             except Exception:
-                logger.exception("Failed to drive GPIO pin %s inactive during stop/cleanup", pin)
+                logger.exception(
+                    "Failed to drive GPIO pins %s/%s inactive during stop/cleanup",
+                    forward_pin,
+                    reverse_pin,
+                )

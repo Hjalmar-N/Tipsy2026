@@ -79,8 +79,16 @@ class Settings(BaseSettings):
         return self.hardware_mode.lower()
 
     @property
-    def parsed_pump_pin_map(self) -> dict[int, int]:
-        mappings: dict[int, int] = {}
+    def parsed_pump_pin_map(self) -> dict[int, tuple[int, int]]:
+        """
+        Parse TIPSY_PUMP_PIN_MAP / PUMP_PIN_MAP into a mapping of pump_id -> (forward_pin, reverse_pin).
+
+        Accepted formats per entry:
+        - "1=17"        -> forward=17, reverse=17
+        - "1=17/4"      -> forward=17, reverse=4
+        - "1:17"        -> forward=17, reverse=17  (backwards-compatible key/value separator)
+        """
+        mappings: dict[int, tuple[int, int]] = {}
         raw_entries = [item.strip() for item in self.pump_pin_map.replace(";", ",").split(",") if item.strip()]
         for entry in raw_entries:
             if "=" in entry:
@@ -88,8 +96,17 @@ class Settings(BaseSettings):
             elif ":" in entry:
                 key, value = entry.split(":", maxsplit=1)
             else:
-                raise ValueError(f"Invalid pump pin map entry '{entry}'. Expected format 'pump_id=pin'.")
-            mappings[int(key.strip())] = int(value.strip())
+                raise ValueError(
+                    f"Invalid pump pin map entry '{entry}'. Expected format 'pump_id=pin' or 'pump_id=forward/reverse'."
+                )
+            key_int = int(key.strip())
+            value_str = value.strip()
+            if "/" in value_str:
+                forward_str, reverse_str = value_str.split("/", maxsplit=1)
+                mappings[key_int] = (int(forward_str.strip()), int(reverse_str.strip()))
+            else:
+                pin = int(value_str)
+                mappings[key_int] = (pin, pin)
         return mappings
 
 

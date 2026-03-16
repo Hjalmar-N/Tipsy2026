@@ -82,7 +82,7 @@ export default function App() {
     };
   }, [screen]);
 
-  const readiness = getMachineReadiness(systemStatus);
+  const readiness = getMachineReadiness(systemStatus, recipes);
 
   async function startOrder(recipe: RecipeAvailability, size: OrderSize) {
     try {
@@ -102,7 +102,7 @@ export default function App() {
         return;
       }
 
-      if (!getMachineReadiness(latestStatus).ready) {
+      if (!getMachineReadiness(latestStatus, [latestRecipe]).ready) {
         setScreen({
           name: "error",
           title: "Machine is not ready",
@@ -176,7 +176,9 @@ export default function App() {
   );
 }
 
-function getMachineReadiness(status: SystemStatus | null): MachineReadiness {
+function getMachineReadiness(status: SystemStatus | null, recipes: RecipeAvailability[]): MachineReadiness {
+  const hasMakeableRecipe = recipes.some((recipe) => recipe.can_make);
+
   if (!status) {
     return {
       ready: false,
@@ -184,6 +186,7 @@ function getMachineReadiness(status: SystemStatus | null): MachineReadiness {
       detail: "Waiting for machine status from the backend.",
     };
   }
+
   if (status.emergency_stop_engaged) {
     return {
       ready: false,
@@ -191,6 +194,7 @@ function getMachineReadiness(status: SystemStatus | null): MachineReadiness {
       detail: "Operator reset is required before new drinks can be served.",
     };
   }
+
   if (status.active_pump_ids.length > 0) {
     return {
       ready: false,
@@ -198,6 +202,15 @@ function getMachineReadiness(status: SystemStatus | null): MachineReadiness {
       detail: `Pump activity detected on ${status.active_pump_ids.join(", ")}. Please wait for the current task to finish.`,
     };
   }
+
+  if (!hasMakeableRecipe) {
+    return {
+      ready: false,
+      label: "No drinks ready",
+      detail: "There are currently no recipes that can be made. Ask an operator to refill ingredients.",
+    };
+  }
+
   return {
     ready: true,
     label: "Ready",

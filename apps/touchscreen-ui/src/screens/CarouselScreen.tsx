@@ -116,6 +116,22 @@ export function CarouselScreen({
 
   const imageUrl = getDrinkImageUrl(recipe.name);
 
+  const handleSizeTap = useCallback(
+    (size: OrderSize) =>
+      (e: React.PointerEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log(`[Tipsy Kiosk] ${size} tapped. readiness.ready=${readiness.ready}`);
+        if (!readiness.ready) {
+          console.log(`[Tipsy Kiosk] ${size} blocked: machine not ready.`);
+          return;
+        }
+        console.log(`[Tipsy Kiosk] ${size} proceeding: calling onSelectSize for recipe id=${recipe.id}`);
+        onSelectSize(recipe, size);
+      },
+    [onSelectSize, readiness.ready, recipe],
+  );
+
   return (
       <RoundFrame>
       <div className="flex flex-1 flex-col">
@@ -123,13 +139,10 @@ export function CarouselScreen({
           {/* Single: left, white outline martini + label */}
           <button
             type="button"
-            disabled={!readiness.ready}
-            onPointerDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onSelectSize(recipe, "single");
-            }}
-            className="flex min-h-[100px] min-w-[80px] flex-1 max-w-[110px] touch-manipulation flex-col items-center justify-center gap-1.5 text-white/95 transition active:opacity-90 disabled:opacity-40"
+            onPointerDown={handleSizeTap("single")}
+            className={`flex min-h-[100px] min-w-[80px] flex-1 max-w-[110px] touch-manipulation flex-col items-center justify-center gap-1.5 text-white/95 transition active:opacity-90 ${
+              readiness.ready ? "" : "opacity-40"
+            }`}
             aria-label="Single"
           >
             <SingleMartiniIcon className="h-11 w-11 shrink-0" />
@@ -166,13 +179,10 @@ export function CarouselScreen({
           {/* Double: right, two martini glasses + label */}
           <button
             type="button"
-            disabled={!readiness.ready}
-            onPointerDown={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onSelectSize(recipe, "double");
-            }}
-            className="flex min-h-[100px] min-w-[80px] flex-1 max-w-[110px] touch-manipulation flex-col items-center justify-center gap-1.5 text-white/95 transition active:opacity-90 disabled:opacity-40"
+            onPointerDown={handleSizeTap("double")}
+            className={`flex min-h-[100px] min-w-[80px] flex-1 max-w-[110px] touch-manipulation flex-col items-center justify-center gap-1.5 text-white/95 transition active:opacity-90 ${
+              readiness.ready ? "" : "opacity-40"
+            }`}
             aria-label="Double"
           >
             <DoubleMartiniIcon className="h-11 w-11 shrink-0" />

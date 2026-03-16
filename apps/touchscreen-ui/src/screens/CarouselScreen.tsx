@@ -66,6 +66,26 @@ export function CarouselScreen({
     setPointerStartX(null);
   }, []);
 
+  const handleSizeTap = useCallback(
+    (size: OrderSize) =>
+      (e: React.PointerEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log(`[Tipsy Kiosk] ${size} tapped. readiness.ready=${readiness.ready}`);
+        if (!readiness.ready) {
+          console.log(`[Tipsy Kiosk] ${size} blocked: machine not ready.`);
+          return;
+        }
+        if (!recipe) {
+          console.log(`[Tipsy Kiosk] ${size} blocked: no recipe selected.`);
+          return;
+        }
+        console.log(`[Tipsy Kiosk] ${size} proceeding: calling onSelectSize for recipe id=${recipe.id}`);
+        onSelectSize(recipe, size);
+      },
+    [onSelectSize, readiness.ready, recipe],
+  );
+
   if (error) {
     return (
       <RoundFrame>
@@ -115,22 +135,6 @@ export function CarouselScreen({
   if (!recipe) return null;
 
   const imageUrl = getDrinkImageUrl(recipe.name);
-
-  const handleSizeTap = useCallback(
-    (size: OrderSize) =>
-      (e: React.PointerEvent<HTMLButtonElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
-        console.log(`[Tipsy Kiosk] ${size} tapped. readiness.ready=${readiness.ready}`);
-        if (!readiness.ready) {
-          console.log(`[Tipsy Kiosk] ${size} blocked: machine not ready.`);
-          return;
-        }
-        console.log(`[Tipsy Kiosk] ${size} proceeding: calling onSelectSize for recipe id=${recipe.id}`);
-        onSelectSize(recipe, size);
-      },
-    [onSelectSize, readiness.ready, recipe],
-  );
 
   return (
       <RoundFrame>

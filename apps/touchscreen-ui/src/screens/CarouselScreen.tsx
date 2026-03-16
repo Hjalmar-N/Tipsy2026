@@ -139,24 +139,24 @@ export function CarouselScreen({
             <img
               src={imageUrl}
               alt=""
-              className="max-h-[280px] w-auto max-w-[280px] object-contain object-center drop-shadow-[0_12px_40px_rgba(0,0,0,0.65)]"
+              className="h-auto max-h-full w-auto max-w-full object-contain object-center drop-shadow-[0_12px_40px_rgba(0,0,0,0.65)]"
               draggable={false}
               onError={() => setImageErrored(true)}
             />
           ) : (
-            <div className="flex h-[180px] w-[180px] items-center justify-center text-6xl font-semibold text-white/40" aria-hidden>
+            <div className="flex h-[200px] w-[200px] items-center justify-center text-7xl font-semibold text-white/40" aria-hidden>
               {recipe.name.slice(0, 1)}
             </div>
           )}
         </div>
 
         {/* Drink name */}
-        <h2 className="shrink-0 text-center font-body text-lg font-medium tracking-tight text-white">
+        <h2 className="shrink-0 text-center font-body text-base font-medium tracking-tight text-white">
           {recipe.name}
         </h2>
 
         {count > 1 && (
-          <div className="mt-1.5 flex shrink-0 justify-center gap-1.5">
+          <div className="mt-1 flex shrink-0 justify-center gap-1.5">
             {Array.from({ length: count }, (_, i) => (
               <span
                 key={i}
@@ -170,31 +170,31 @@ export function CarouselScreen({
           </div>
         )}
 
-        {/* Size controls: centered below drink */}
-        <div className="mt-3 flex shrink-0 flex-row items-center justify-center gap-4 pb-1">
+        {/* Size controls: centered below drink, constrained to safe width */}
+        <div className="mx-auto mt-2 flex w-full max-w-[272px] shrink-0 flex-row items-center justify-center gap-3">
           <div
             role="button"
             aria-label="Single"
             style={{ touchAction: "manipulation" }}
-            className={`flex h-[72px] w-[130px] touch-manipulation flex-col items-center justify-center gap-1 rounded-2xl border border-white/20 bg-white/10 transition active:bg-white/25 ${
+            className={`flex h-[64px] w-[120px] touch-manipulation flex-col items-center justify-center gap-1 rounded-2xl border border-white/20 bg-white/10 transition active:bg-white/25 ${
               readiness.ready ? "" : "opacity-40"
             }`}
             onPointerDown={(e) => handleSizePointerDown("single", e)}
           >
-            <SingleMartiniIcon className="h-8 w-8 shrink-0 text-white/90" />
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-white/80">Single</span>
+            <SingleMartiniIcon className="h-7 w-7 shrink-0 text-white/90" />
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-white/80">Single</span>
           </div>
           <div
             role="button"
             aria-label="Double"
             style={{ touchAction: "manipulation" }}
-            className={`flex h-[72px] w-[130px] touch-manipulation flex-col items-center justify-center gap-1 rounded-2xl border border-white/20 bg-white/10 transition active:bg-white/25 ${
+            className={`flex h-[64px] w-[120px] touch-manipulation flex-col items-center justify-center gap-1 rounded-2xl border border-white/20 bg-white/10 transition active:bg-white/25 ${
               readiness.ready ? "" : "opacity-40"
             }`}
             onPointerDown={(e) => handleSizePointerDown("double", e)}
           >
-            <DoubleMartiniIcon className="h-8 w-8 shrink-0 text-white/90" />
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-white/80">Double</span>
+            <DoubleMartiniIcon className="h-7 w-7 shrink-0 text-white/90" />
+            <span className="text-[10px] font-semibold uppercase tracking-widest text-white/80">Double</span>
           </div>
         </div>
       </div>

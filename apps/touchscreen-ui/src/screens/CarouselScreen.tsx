@@ -46,17 +46,12 @@ export function CarouselScreen({
   }, [count]);
 
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.pointerType === "mouse") return;
     setPointerStartX(e.clientX);
     e.currentTarget.setPointerCapture(e.pointerId);
   }, []);
 
   const handlePointerUp = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
-      if (e.pointerType === "mouse") {
-        setPointerStartX(null);
-        return;
-      }
       const startX = pointerStartX;
       setPointerStartX(null);
       if (startX == null || count <= 1) return;

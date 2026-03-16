@@ -124,8 +124,9 @@ export function CarouselScreen({
           <button
             type="button"
             disabled={!readiness.ready}
-            onPointerUp={(e) => {
+            onPointerDown={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               if (!readiness.ready) return;
               onSelectSize(recipe, "single");
             }}
@@ -167,8 +168,9 @@ export function CarouselScreen({
           <button
             type="button"
             disabled={!readiness.ready}
-            onPointerUp={(e) => {
+            onPointerDown={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               if (!readiness.ready) return;
               onSelectSize(recipe, "double");
             }}

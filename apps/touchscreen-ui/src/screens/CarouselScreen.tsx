@@ -23,7 +23,7 @@ export function CarouselScreen({
   onRetry: () => void;
 }) {
   const [index, setIndex] = useState(0);
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [pointerStartX, setPointerStartX] = useState<number | null>(null);
   const [imageErrored, setImageErrored] = useState(false);
 
   const count = recipes.length;
@@ -45,22 +45,31 @@ export function CarouselScreen({
     setIndex((i) => i + 1);
   }, [count]);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    setTouchStartX(e.targetTouches[0].clientX);
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === "mouse") return;
+    setPointerStartX(e.clientX);
+    e.currentTarget.setPointerCapture(e.pointerId);
   }, []);
 
-  const handleTouchEnd = useCallback(
-    (e: React.TouchEvent) => {
-      const endX = e.changedTouches[0].clientX;
-      const startX = touchStartX;
-      setTouchStartX(null);
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.pointerType === "mouse") {
+        setPointerStartX(null);
+        return;
+      }
+      const startX = pointerStartX;
+      setPointerStartX(null);
       if (startX == null || count <= 1) return;
-      const delta = startX - endX;
+      const delta = startX - e.clientX;
       if (delta > SWIPE_THRESHOLD_PX) goNext();
       else if (delta < -SWIPE_THRESHOLD_PX) goPrev();
     },
-    [touchStartX, count, goNext, goPrev],
+    [pointerStartX, count, goNext, goPrev],
   );
+
+  const handlePointerCancel = useCallback(() => {
+    setPointerStartX(null);
+  }, []);
 
   if (error) {
     return (
@@ -113,12 +122,8 @@ export function CarouselScreen({
   const imageUrl = getDrinkImageUrl(recipe.name);
 
   return (
-    <RoundFrame>
-      <div
-        className="flex flex-1 flex-col"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
+      <RoundFrame>
+      <div className="flex flex-1 flex-col">
         <div className="flex flex-1 flex-row items-center justify-center gap-1">
           {/* Single: left, white outline martini + label */}
           <button
@@ -132,8 +137,15 @@ export function CarouselScreen({
             <span className="text-xs font-medium uppercase tracking-widest">single</span>
           </button>
 
-          {/* Central drink: transparent PNG hero, no card; standalone centered object */}
-          <div className="relative flex flex-1 flex-col items-center justify-center" style={{ minWidth: 0 }}>
+          {/* Central drink: main gesture surface for horizontal swipes */}
+          <div
+            className="relative flex flex-1 flex-col items-center justify-center"
+            style={{ minWidth: 0 }}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+            onPointerCancel={handlePointerCancel}
+            onPointerLeave={handlePointerCancel}
+          >
             {imageUrl && !imageErrored ? (
               <img
                 src={imageUrl}

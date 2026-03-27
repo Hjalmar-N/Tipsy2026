@@ -13,6 +13,7 @@ export function CarouselScreen({
   readiness,
   onSelectSize,
   onRetry,
+  onOpenService,
 }: {
   title: string;
   loading: boolean;
@@ -21,6 +22,7 @@ export function CarouselScreen({
   readiness: MachineReadiness;
   onSelectSize: (recipe: RecipeAvailability, size: OrderSize) => void;
   onRetry: () => void;
+  onOpenService: () => void;
 }) {
   const [index, setIndex] = useState(0);
   const [pointerStartX, setPointerStartX] = useState<number | null>(null);
@@ -79,6 +81,13 @@ export function CarouselScreen({
           >
             Back to home
           </button>
+          <button
+            type="button"
+            onClick={onOpenService}
+            className="min-h-[52px] touch-manipulation rounded-2xl border border-white/15 bg-white/8 px-5 py-3 text-sm font-semibold uppercase tracking-[0.22em] text-white/85 active:bg-white/16"
+          >
+            Service
+          </button>
         </div>
       </RoundFrame>
     );
@@ -107,6 +116,13 @@ export function CarouselScreen({
           >
             Retry
           </button>
+          <button
+            type="button"
+            onClick={onOpenService}
+            className="min-h-[52px] touch-manipulation rounded-2xl border border-white/15 bg-white/8 px-5 py-3 text-sm font-semibold uppercase tracking-[0.22em] text-white/85 active:bg-white/16"
+          >
+            Service
+          </button>
         </div>
       </RoundFrame>
     );
@@ -126,6 +142,16 @@ export function CarouselScreen({
   return (
     <RoundFrame>
       <div className="flex flex-1 flex-col">
+        <div className="mb-2 flex shrink-0 justify-end">
+          <button
+            type="button"
+            onClick={onOpenService}
+            className="min-h-[44px] touch-manipulation rounded-full border border-white/15 bg-white/8 px-4 py-2 text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-white/82 active:bg-white/16"
+          >
+            Service
+          </button>
+        </div>
+
         {/* Swipe surface: central drink image */}
         <div
           className="relative flex flex-1 flex-col items-center justify-center"

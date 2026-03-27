@@ -136,22 +136,22 @@ export default function App() {
     setServiceAction(action);
     setServiceFeedback({
       tone: "info",
-      text: action === "prime" ? "Priming all pumps with the backend default cycle..." : "Running the clean cycle with the backend default settings...",
+      text: action === "prime" ? "Running the prime cycle for 5 seconds..." : "Running the flush cycle for 10 seconds...",
     });
 
     try {
       if (action === "prime") {
-        await api.primePumps();
+        await api.primePumps({ duration_seconds: 5 });
       } else {
-        await api.cleanPumps();
+        await api.cleanPumps({ duration_seconds: 10 });
       }
       await loadKioskData();
       setServiceFeedback({
         tone: "success",
         text:
           action === "prime"
-            ? "Prime cycle finished. You can continue to drinks or run another service action."
-            : "Clean cycle finished. The machine is ready for the next step.",
+            ? "Prime finished. Tap Drinks to open the menu or run it again if needed."
+            : "Flush finished. Tap Drinks to open the menu or repeat the flush if needed.",
       });
     } catch (serviceError) {
       setServiceFeedback({
@@ -173,7 +173,7 @@ export default function App() {
             feedback={serviceFeedback}
             onPrime={() => void runServiceAction("prime")}
             onClean={() => void runServiceAction("clean")}
-            onContinue={() => setScreen({ name: "home" })}
+            onDrinks={() => setScreen({ name: "home" })}
           />
         )}
 
@@ -186,6 +186,7 @@ export default function App() {
             readiness={readiness}
             onSelectSize={(recipe, size) => void startOrder(recipe, size)}
             onRetry={() => { setLoading(true); void loadKioskData(); }}
+            onOpenService={() => setScreen({ name: "startup-service" })}
           />
         )}
 

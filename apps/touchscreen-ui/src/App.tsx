@@ -3,6 +3,7 @@ import { CarouselScreen } from "./screens/CarouselScreen";
 import { PouringScreen } from "./screens/PouringScreen";
 import { SuccessScreen } from "./screens/SuccessScreen";
 import { ErrorScreen } from "./screens/ErrorScreen";
+import { StartupServiceScreen } from "./screens/StartupServiceScreen";
 import { api } from "./lib/api";
 import { kioskConfig } from "./config";
 import type { KioskError, MachineReadiness, OrderSize, RecipeAvailability, ScreenState, SystemStatus } from "./types";
@@ -10,9 +11,11 @@ import type { KioskError, MachineReadiness, OrderSize, RecipeAvailability, Scree
 export default function App() {
   const [recipes, setRecipes] = useState<RecipeAvailability[]>([]);
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
-  const [screen, setScreen] = useState<ScreenState>({ name: "home" });
+  const [screen, setScreen] = useState<ScreenState>({ name: "startup-service" });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<KioskError | null>(null);
+  const [serviceAction, setServiceAction] = useState<"prime" | "clean" | null>(null);
+  const [serviceFeedback, setServiceFeedback] = useState<{ tone: "success" | "error" | "info"; text: string } | null>(null);
 
   async function loadKioskData() {
     try {
@@ -129,9 +132,51 @@ export default function App() {
     }
   }
 
+  async function runServiceAction(action: "prime" | "clean") {
+    setServiceAction(action);
+    setServiceFeedback({
+      tone: "info",
+      text: action === "prime" ? "Priming all pumps with the backend default cycle..." : "Running the clean cycle with the backend default settings...",
+    });
+
+    try {
+      if (action === "prime") {
+        await api.primePumps();
+      } else {
+        await api.cleanPumps();
+      }
+      await loadKioskData();
+      setServiceFeedback({
+        tone: "success",
+        text:
+          action === "prime"
+            ? "Prime cycle finished. You can continue to drinks or run another service action."
+            : "Clean cycle finished. The machine is ready for the next step.",
+      });
+    } catch (serviceError) {
+      setServiceFeedback({
+        tone: "error",
+        text: toKioskError(serviceError).message,
+      });
+    } finally {
+      setServiceAction(null);
+    }
+  }
+
   return (
     <main className="round-display-root min-h-screen text-white">
       <div className="round-display-safe">
+        {screen.name === "startup-service" && (
+          <StartupServiceScreen
+            readiness={readiness}
+            busyAction={serviceAction}
+            feedback={serviceFeedback}
+            onPrime={() => void runServiceAction("prime")}
+            onClean={() => void runServiceAction("clean")}
+            onContinue={() => setScreen({ name: "home" })}
+          />
+        )}
+
         {screen.name === "home" && (
           <CarouselScreen
             title={kioskConfig.titleText}

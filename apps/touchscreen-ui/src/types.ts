@@ -68,6 +68,10 @@ export interface SystemStatus {
   active_pump_ids: number[];
 }
 
+export interface PumpBatchRunPayload {
+  duration_seconds?: number;
+}
+
 export interface KioskError {
   message: string;
 }
@@ -79,6 +83,7 @@ export interface MachineReadiness {
 }
 
 export type ScreenState =
+  | { name: "startup-service" }
   | { name: "home" }
   | { name: "pouring"; recipe: RecipeAvailability; size: OrderSize; jobId: number; startedAt: number; lastJob: PourJob }
   | { name: "success"; recipe: RecipeAvailability; size: OrderSize; job: PourJob }

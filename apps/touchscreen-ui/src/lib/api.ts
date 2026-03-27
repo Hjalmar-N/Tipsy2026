@@ -1,4 +1,4 @@
-import type { OrderCreatePayload, PourJob, RecipeAvailability, SystemStatus } from "../types";
+import type { OrderCreatePayload, PourJob, PumpBatchRunPayload, RecipeAvailability, SystemStatus } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.trim() || "/api";
 
@@ -34,4 +34,8 @@ export const api = {
   createOrder: (payload: OrderCreatePayload) =>
     request<PourJob>("/orders", { method: "POST", body: JSON.stringify(payload) }),
   getOrder: (orderId: number) => request<PourJob>(`/orders/${orderId}`),
+  primePumps: (payload?: PumpBatchRunPayload) =>
+    request<PourJob>("/pumps/prime", { method: "POST", body: JSON.stringify(payload ?? {}) }),
+  cleanPumps: (payload?: PumpBatchRunPayload) =>
+    request<PourJob>("/pumps/clean", { method: "POST", body: JSON.stringify(payload ?? {}) }),
 };
